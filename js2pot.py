@@ -168,7 +168,7 @@ def mine_js_files(js_pathname, pot_filename):
         if len(new_phrase) > 0:
             output.write('msgid "%s"\nmsgstr ""\n\n' % (new_phrase))
         else:
-            output_write('\n')
+            output.write('\n')
 
     for i in range(len(pot_list)):
         if pot_list[i] in js_list:

@@ -41,14 +41,14 @@ def mine_from_po_to_po(oldfilename, newfilename, ignore_case):
 
         if ignore_case:
             if msgstr_flag and value == '' and  key.lower() in olddict:
-                print 'found a match for %s' % (key)
+                print('found a match for %s' % (key))
                 output.write('msgstr "%s"\n' % (olddict[key.lower()]))
             else:
                 output.write(line);
         else:
             if msgstr_flag and value == '' and  key in olddict:
                 output.write('msgstr "%s"\n' % (olddict[key]))
-                print 'found a match for %s' % (key)
+                print('found a match for %s' % (key))
             else:
                 output.write(line);
 
@@ -57,10 +57,10 @@ def mine_from_po_to_po(oldfilename, newfilename, ignore_case):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print "po2po source target [ignorecase]"
+        print("po2po source target [ignorecase]")
     elif len(sys.argv) == 4:
         ini = mine_from_po_to_po(sys.argv[1], sys.argv[2], True)
-        print "Finished"
+        print("Finished")
     else:
         ini = mine_from_po_to_po(sys.argv[1], sys.argv[2], False)
-        print "Finished"
+        print("Finished")
