@@ -32,7 +32,7 @@ def mine_js_file(js_pathname, po_filename):
 
     # Mine strings for l23n from js files.
     js_files = glob.glob(os.path.join(js_pathname, 'js', '*js'))
-    print js_files
+    print(js_files)
 
     for path in js_files:
         basename = os.path.basename(path)
@@ -87,7 +87,7 @@ def mine_js_file(js_pathname, po_filename):
         output.close()
 
     json_files = glob.glob(os.path.join(js_pathname, 'plugins', '*json'))
-    print json_files
+    print(json_files)
 
     for path in json_files:
         basename = os.path.basename(path)
@@ -98,10 +98,10 @@ def mine_js_file(js_pathname, po_filename):
         for line in js_fd:
             tmp = line.split("_('")
             if len(tmp) > 1:
-                print tmp
+                print(tmp)
                 trans_line = tmp[0];
                 for i in range(len(tmp)):
-                    print i
+                    print(i)
                     if i == 0:
                         continue;
                     trans_line += "_('"
@@ -110,10 +110,10 @@ def mine_js_file(js_pathname, po_filename):
                         if j == 0:
                             if tmp2[j] in po_dict:
                                 trans_line += po_dict[tmp2[j]]
-                                print po_dict[tmp2[j]]
+                                print(po_dict[tmp2[j]])
                             else:
                                 trans_line += tmp2[j]
-                                print tmp2[j]
+                                print(tmp2[j])
                         else:
                             trans_line += tmp2[j]
                         if j < len(tmp2) - 1:
@@ -122,10 +122,10 @@ def mine_js_file(js_pathname, po_filename):
 
             tmp = line.split('_("')
             if len(tmp) > 1:
-                print tmp
+                print(tmp)
                 trans_line = tmp[0];
                 for i in range(len(tmp)):
-                    print i
+                    print(i)
                     if i == 0:
                         continue;
                     trans_line += '_("'
@@ -134,10 +134,10 @@ def mine_js_file(js_pathname, po_filename):
                         if j == 0:
                             if tmp2[j] in po_dict:
                                 trans_line += po_dict[tmp2[j]]
-                                print po_dict[tmp2[j]]
+                                print(po_dict[tmp2[j]])
                             else:
                                 trans_line += tmp2[j]
-                                print tmp2[j]
+                                print(tmp2[j])
                         else:
                             trans_line += tmp2[j]
                         if j < len(tmp2) - 1:
@@ -152,6 +152,6 @@ def mine_js_file(js_pathname, po_filename):
     
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print 'js2js.py js-path po-file'
+        print('js2js.py js-path po-file')
     else:
         ini = mine_js_file(sys.argv[1], sys.argv[2])
