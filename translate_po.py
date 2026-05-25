@@ -36,11 +36,10 @@
 import sys
 import os
 import re
-import codecs
 import time
 import argparse
 
-AUTO_TRANSLATE_COMMENT = '#. AUTOTRANSLATED: Google Translate'
+AUTO_TRANSLATE_COMMENT = "#. AUTOTRANSLATED: Google Translate"
 
 def parse_po_file(path):
     """
@@ -55,9 +54,9 @@ def parse_po_file(path):
     Also returns the header block as a raw string.
     """
     entries = []
-    header = ''
+    header = ""
 
-    with codecs.open(path, 'r', 'UTF-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     i = 0
@@ -68,7 +67,7 @@ def parse_po_file(path):
         line = lines[i]
 
         # Blank line: flush pending comments as a spacer
-        if line.strip() == '':
+        if line.strip() == "":
             if pending_comments:
                 pending_comments.append(line)
             else:
@@ -77,33 +76,33 @@ def parse_po_file(path):
             continue
 
         # Comment or flag lines
-        if line.startswith('#') and not line.startswith('#~'):
+        if line.startswith("#") and not line.startswith("#~"):
             pending_comments.append(line)
             i += 1
             continue
 
         # Obsolete entries (#~msgid / #~msgstr) — preserve as-is
-        if line.startswith('#~'):
+        if line.startswith("#~"):
             entry = {
-                'comments': pending_comments,
-                'obsolete': True,
-                'raw': [line],
-                'msgid': None,
-                'msgstr': None,
+                "comments": pending_comments,
+                "obsolete": True,
+                "raw": [line],
+                "msgid": None,
+                "msgstr": None,
             }
             pending_comments = []
             i += 1
             # Collect the rest of this obsolete block
-            while i < len(lines) and (lines[i].startswith('#~') or lines[i].strip() == ''):
-                if lines[i].strip() == '':
+            while i < len(lines) and (lines[i].startswith("#~") or lines[i].strip() == ""):
+                if lines[i].strip() == "":
                     break
-                entry['raw'].append(lines[i])
+                entry["raw"].append(lines[i])
                 i += 1
             entries.append(entry)
             continue
 
         # msgid
-        if line.startswith('msgid '):
+        if line.startswith("msgid "):
             raw_msgid_lines = [line]
             msgid = _unquote(line[6:].strip())
             i += 1
@@ -114,24 +113,24 @@ def parse_po_file(path):
                 i += 1
 
             # The very first msgid "" is the PO header
-            if msgid == '' and not header_done:
+            if msgid == "" and not header_done:
                 # Collect msgstr for header
                 raw_msgstr_lines = []
-                if i < len(lines) and lines[i].startswith('msgstr'):
+                if i < len(lines) and lines[i].startswith("msgstr"):
                     raw_msgstr_lines.append(lines[i])
                     i += 1
                     while i < len(lines) and lines[i].startswith('"'):
                         raw_msgstr_lines.append(lines[i])
                         i += 1
-                header = ''.join(pending_comments) + ''.join(raw_msgid_lines) + ''.join(raw_msgstr_lines)
+                header = "".join(pending_comments) + "".join(raw_msgid_lines) + "".join(raw_msgstr_lines)
                 pending_comments = []
                 header_done = True
                 continue
 
             # msgstr
             raw_msgstr_lines = []
-            msgstr = ''
-            if i < len(lines) and lines[i].startswith('msgstr'):
+            msgstr = ""
+            if i < len(lines) and lines[i].startswith("msgstr"):
                 raw_msgstr_lines.append(lines[i])
                 msgstr = _unquote(lines[i][7:].strip())
                 i += 1
@@ -141,12 +140,12 @@ def parse_po_file(path):
                     i += 1
 
             entry = {
-                'comments': pending_comments,
-                'obsolete': False,
-                'msgid': msgid,
-                'msgstr': msgstr,
-                'raw_msgid': raw_msgid_lines,
-                'raw_msgstr': raw_msgstr_lines,
+                "comments": pending_comments,
+                "obsolete": False,
+                "msgid": msgid,
+                "msgstr": msgstr,
+                "raw_msgid": raw_msgid_lines,
+                "raw_msgstr": raw_msgstr_lines,
             }
             pending_comments = []
             entries.append(entry)
@@ -165,37 +164,37 @@ def _unquote(s):
         s = s[1:-1]
     elif s.startswith("'") and s.endswith("'"):
         s = s[1:-1]
-    return s.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t')
+    return s.replace('\\"', '"').replace("\\n", "\n").replace("\\t", "\t")
 
 
 def _quote(s):
     """Escape and quote a string for writing as a PO msgstr value."""
-    s = s.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\t', '\\t')
+    s = s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t")
     return '"%s"' % s
 
 
 def write_po_file(path, header, entries):
     """Write entries back to a PO file."""
-    with codecs.open(path, 'w', 'UTF-8') as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(header)
-        if header and not header.endswith('\n'):
-            f.write('\n')
+        if header and not header.endswith("\n"):
+            f.write("\n")
         for entry in entries:
             # Write pending comments/blank lines
-            for c in entry['comments']:
+            for c in entry["comments"]:
                 f.write(c)
 
-            if entry.get('obsolete'):
-                for line in entry['raw']:
+            if entry.get("obsolete"):
+                for line in entry["raw"]:
                     f.write(line)
-                f.write('\n')
+                f.write("\n")
                 continue
 
-            for line in entry['raw_msgid']:
+            for line in entry["raw_msgid"]:
                 f.write(line)
-            for line in entry['raw_msgstr']:
+            for line in entry["raw_msgstr"]:
                 f.write(line)
-            f.write('\n')
+            f.write("\n")
 
 
 def translate_entries(entries, target_lang, translator_fn):
@@ -207,29 +206,29 @@ def translate_entries(entries, target_lang, translator_fn):
     skipped = 0
 
     for entry in entries:
-        if entry.get('obsolete'):
+        if entry.get("obsolete"):
             continue
-        if not entry.get('msgid'):
+        if not entry.get("msgid"):
             continue
-        if entry['msgstr']:  # already translated
+        if entry["msgstr"]:  # already translated
             continue
 
-        msgid = entry['msgid']
+        msgid = entry["msgid"]
         try:
             result = translator_fn(msgid, target_lang)
-            entry['msgstr'] = result
+            entry["msgstr"] = result
             # Update the raw_msgstr line
-            entry['raw_msgstr'] = ['msgstr %s\n' % _quote(result)]
+            entry["raw_msgstr"] = ["msgstr %s\n" % _quote(result)]
             # Add auto-translate comment if not already present
-            if not any(AUTO_TRANSLATE_COMMENT in c for c in entry['comments']):
+            if not any(AUTO_TRANSLATE_COMMENT in c for c in entry["comments"]):
                 # Insert before any blank lines at the end of comments
-                insert_at = len(entry['comments'])
-                while insert_at > 0 and entry['comments'][insert_at - 1].strip() == '':
+                insert_at = len(entry["comments"])
+                while insert_at > 0 and entry["comments"][insert_at - 1].strip() == "":
                     insert_at -= 1
-                entry['comments'].insert(insert_at, AUTO_TRANSLATE_COMMENT + '\n')
+                entry["comments"].insert(insert_at, AUTO_TRANSLATE_COMMENT + "\n")
             translated += 1
         except Exception as e:
-            print('  WARNING: could not translate %r: %s' % (msgid[:60], e), file=sys.stderr)
+            print("  WARNING: could not translate %r: %s" % (msgid[:60], e), file=sys.stderr)
             skipped += 1
 
     return translated, skipped
@@ -250,7 +249,7 @@ def make_google_cloud_translator(project_id=None):
 
     def translate_fn(text, target_lang):
         result = client.translate(text, target_language=target_lang)
-        return result['translatedText']
+        return result["translatedText"]
 
     return translate_fn
 
@@ -265,7 +264,7 @@ def make_googletrans_translator():
 
     def translate_fn(text, target_lang):
         time.sleep(0.2)  # be polite to avoid rate limiting
-        return GoogleTranslator(source='auto', target=target_lang).translate(text)
+        return GoogleTranslator(source="auto", target=target_lang).translate(text)
 
     return translate_fn
 
@@ -276,52 +275,52 @@ def make_googletrans_translator():
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Auto-translate untranslated strings in a PO file using Google Translate.'
+        description="Auto-translate untranslated strings in a PO file using Google Translate."
     )
-    parser.add_argument('input_po', help='Input PO file path')
-    parser.add_argument('output_po', help='Output PO file path')
-    parser.add_argument('target_lang', help='Target language code (e.g. fr, es, de, ja, pt-BR)')
+    parser.add_argument("input_po", help="Input PO file path")
+    parser.add_argument("output_po", help="Output PO file path")
+    parser.add_argument("target_lang", help="Target language code (e.g. fr, es, de, ja, pt-BR)")
     parser.add_argument(
-        '--backend', choices=['cloud', 'free'], default='free',
-        help='Translation backend: "cloud" (Google Cloud Translation API, requires credentials) '
-             'or "free" (googletrans, unofficial, no key needed). Default: free'
+        "--backend", choices=["cloud", "free"], default="free",
+        help="Translation backend: \"cloud\" (Google Cloud Translation API, requires credentials) "
+             "or \"free\" (googletrans, unofficial, no key needed). Default: free"
     )
     parser.add_argument(
-        '--project', default=None,
-        help='Google Cloud project ID (only needed for --backend=cloud)'
+        "--project", default=None,
+        help="Google Cloud project ID (only needed for --backend=cloud)"
     )
     args = parser.parse_args()
 
-    print('Parsing %s...' % args.input_po)
+    print("Parsing %s..." % args.input_po)
     header, entries = parse_po_file(args.input_po)
 
     untranslated = sum(
         1 for e in entries
-        if not e.get('obsolete') and e.get('msgid') and not e.get('msgstr')
+        if not e.get("obsolete") and e.get("msgid") and not e.get("msgstr")
     )
-    total = sum(1 for e in entries if not e.get('obsolete') and e.get('msgid'))
-    print('Found %d untranslated strings out of %d total.' % (untranslated, total))
+    total = sum(1 for e in entries if not e.get("obsolete") and e.get("msgid"))
+    print("Found %d untranslated strings out of %d total." % (untranslated, total))
 
     if untranslated == 0:
-        print('Nothing to do.')
+        print("Nothing to do.")
         return
 
-    print('Loading translator backend: %s' % args.backend)
-    if args.backend == 'cloud':
+    print("Loading translator backend: %s" % args.backend)
+    if args.backend == "cloud":
         translator_fn = make_google_cloud_translator(args.project)
     else:
         translator_fn = make_googletrans_translator()
 
-    print('Translating to %s...' % args.target_lang)
+    print("Translating to %s..." % args.target_lang)
     translated, skipped = translate_entries(entries, args.target_lang, translator_fn)
 
-    print('Writing %s...' % args.output_po)
+    print("Writing %s..." % args.output_po)
     write_po_file(args.output_po, header, entries)
 
-    print('Done. Translated: %d, Skipped (errors): %d' % (translated, skipped))
+    print("Done. Translated: %d, Skipped (errors): %d" % (translated, skipped))
     if translated > 0:
-        print('Auto-translated strings are marked with: %s' % AUTO_TRANSLATE_COMMENT)
+        print("Auto-translated strings are marked with: %s" % AUTO_TRANSLATE_COMMENT)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
