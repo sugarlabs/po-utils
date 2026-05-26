@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import glob
+# import string
 import codecs
 
 js_list = []
@@ -20,65 +21,66 @@ js_line_numbers_dict = {}
 
 def mine_path(js_files, root_path):
 
+    TRANS_RE = re.compile(r'//.TRANS:(.*)')
+    # Two alternatives: double-quoted and single-quoted strings.
+    # Using [^"] / [^'] instead of .*? prevents the match from
+    # accidentally spanning across multiple _() calls.
+    PHRASE_RE = re.compile(r'_\(\s*"([^"]*)"\s*\)|_\(\s*\'([^\']*)\'\s*\)', re.DOTALL)
+
     trans_note = []
     for path in js_files:
         basename = os.path.basename(path)
         js_fd = codecs.open(path, "r", "UTF-8")
+        content = js_fd.read()
+        js_fd.close()
 
-        count = 1
-        for line in js_fd:
-            tmp = line.split('//.TRANS:')
-            if len(tmp) > 1:
-                if not tmp[1] in trans_note:
-                    trans_note.append(tmp[1])
+        # Build a map from character offset -> line number for accurate reporting
+        line_start_offsets = [0]
+        for i, ch in enumerate(content):
+            if ch == '\n':
+                line_start_offsets.append(i + 1)
 
-            tmp = line.split('_("')            
-            if len(tmp) > 1:
-                for i in range(len(tmp)):
-                    if i == 0:
-                        continue
-                    phrase = tmp[i].split('")')[0];
+        def line_for_offset(offset):
+            lo, hi = 0, len(line_start_offsets) - 1
+            while lo < hi:
+                mid = (lo + hi + 1) // 2
+                if line_start_offsets[mid] <= offset:
+                    lo = mid
+                else:
+                    hi = mid - 1
+            return lo + 1  # 1-based
 
-                    line_number = '%s/%s:%d' % (root_path, basename, count)
-                    if phrase in js_list:
-                        if not line_number in js_line_numbers_dict[phrase]:
-                            js_line_numbers_dict[phrase].append(line_number)
-                    else:
-                        js_list.append(phrase)
-                        js_line_numbers_dict[phrase] = [line_number]
+        # Collect //.TRANS: notes that appear before each _() call
+        trans_positions = [(m.start(), m.group(1).rstrip()) for m in TRANS_RE.finditer(content)]
+        trans_idx = 0  # pointer into trans_positions
 
-                    if len(trans_note) > 0:
-                        if phrase in js_trans_dict:
-                            for note in trans_note:
-                                js_trans_dict[phrase].append(note)
-                        else:
-                            js_trans_dict[phrase] = trans_note
-                        trans_note = []
+        for m in PHRASE_RE.finditer(content):
+            # Attach any //.TRANS: notes that precede this match
+            while trans_idx < len(trans_positions) and trans_positions[trans_idx][0] < m.start():
+                note = trans_positions[trans_idx][1]
+                if note not in trans_note:
+                    trans_note.append(note)
+                trans_idx += 1
 
-            tmp = line.split("_('")            
-            if len(tmp) > 1:
-                for i in range(len(tmp)):
-                    if i == 0:
-                        continue
-                    phrase = tmp[i].split("')")[0];
+            # Collapse internal whitespace (handles multiline strings)
+            # group(1) is set for double-quoted matches, group(2) for single-quoted
+            phrase = re.sub(r'\s+', ' ', (m.group(1) or m.group(2))).strip()
 
-                    line_number = '%s/%s:%d' % (root_path, basename, count)
-                    if phrase in js_list:
-                        if not line_number in js_line_numbers_dict[phrase]:
-                            js_line_numbers_dict[phrase].append(line_number)
-                    else:
-                        js_list.append(phrase)
-                        js_line_numbers_dict[phrase] = [line_number]
+            line_number = '%s/%s:%d' % (root_path, basename, line_for_offset(m.start()))
+            if phrase in js_list:
+                if line_number not in js_line_numbers_dict[phrase]:
+                    js_line_numbers_dict[phrase].append(line_number)
+            else:
+                js_list.append(phrase)
+                js_line_numbers_dict[phrase] = [line_number]
 
-                    if len(trans_note) > 0:
-                        if phrase in js_trans_dict:
-                            for note in trans_note:
-                                js_trans_dict[phrase].append(note)
-                        else:
-                            js_trans_dict[phrase] = trans_note
-                        trans_note = []
-
-            count += 1
+            if len(trans_note) > 0:
+                if phrase in js_trans_dict:
+                    for note in trans_note:
+                        js_trans_dict[phrase].append(note)
+                else:
+                    js_trans_dict[phrase] = list(trans_note)
+                trans_note = []
 
 
 def mine_js_files(js_pathname, pot_filename):
@@ -153,6 +155,8 @@ def mine_js_files(js_pathname, pot_filename):
     print(rtp_files)
     mine_path(rtp_files, "plugins")
 
+
+
     output = codecs.open(pot_filename + '_', 'w', "UTF-8")
     output.write(pot_header)
     
@@ -162,13 +166,14 @@ def mine_js_files(js_pathname, pot_filename):
 
         if js_list[i] in js_trans_dict:
             for j in range(len(js_trans_dict[js_list[i]])):
-                output.write('#.TRANS:%s' % (js_trans_dict[js_list[i]][j]))
+                output.write('#.TRANS:%s\n' % (js_trans_dict[js_list[i]][j]))
 
+        # new_phrase = string.replace(js_list[i], '"', '\\"')
         new_phrase = js_list[i].replace('"', '\\"')
         if len(new_phrase) > 0:
             output.write('msgid "%s"\nmsgstr ""\n\n' % (new_phrase))
         else:
-            output.write('\n')
+            output_write('\n')
 
     for i in range(len(pot_list)):
         if pot_list[i] in js_list:
